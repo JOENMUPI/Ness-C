@@ -14,6 +14,7 @@ import AdminEnterprise from './src/screens/adminEnterprise';
 import NewBank from './src/screens/newBank';
 import Withdraw from './src/screens/withdraw';
 import NewHourDay from './src/screens/newHourDay';
+import NewProduct from './src/screens/newProduct';
 
 const Stack = createStackNavigator();
 
@@ -35,6 +36,7 @@ export default function App() {
         <Stack.Screen name="NewBank" component={NewBank}/>
         <Stack.Screen name="Withdraw" component={Withdraw}/>
         <Stack.Screen name="NewHourDay" component={NewHourDay}/>
+        <Stack.Screen name="NewProduct" component={NewProduct}/>
         <Stack.Screen name="Menu" component={Menu}/>
       </Stack.Navigator>
     </NavigationContainer>

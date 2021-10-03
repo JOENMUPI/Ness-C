@@ -126,8 +126,6 @@ const Withdraw = ({ navigation, route }) => {
         ? body = null 
         : body = { ...withdraw, enterpriseId: route.params.id } 
 
-        console.log('hola', body)
-
         const data = await Http.send('POST', `withdraw/${route.params.type}`, body, token); 
         
         if(!data) {
@@ -310,7 +308,11 @@ const Withdraw = ({ navigation, route }) => {
                     (withdraw.countBank.countBankId == 0)
                     ? <TouchableOpacity 
                         style={WithdrawtStyles.viewCountType}
-                        onPress={() => setmodal({ ...modal, flag: true })}
+                        onPress={() =>
+                            (route.params.banks.length < 1)
+                            ? Alert.alert('Disculpe', 'Registre una cuenta bancaria primero')
+                            : setmodal({ ...modal, flag: true })
+                        }
                         >
                         <Text style={WithdrawtStyles.countTypeText}>
                             Cuenta bancaria

@@ -54,6 +54,22 @@ const AdminEnterprise = ({ navigation, route }) => {
         );
     }
 
+    const gotoNewProduct = (type, data) => {
+        let body = { 
+            type,
+            enterpriseId: enterprise.id,
+            productTags: enterprise.productTag,
+            callBack: callBackProduct.bind(this)
+        }
+
+        if(data) {
+            body = { ...body, data }
+        }
+        
+        setModal({ ...modal, flag: false }); 
+        navigation.navigate('NewProduct', { ...body });
+    }
+
     const handlerModal2Button = () => {
         switch(modal.type) {
             case 'Telefono':
@@ -114,9 +130,10 @@ const AdminEnterprise = ({ navigation, route }) => {
 
     const deleteProductTag = (pt) => { 
         const ptAux = enterprise.productTag.filter(i => i != pt);
+        const body = { productTagId: pt.id, enterpriseId: enterprise.id }
 
         setEnterprise({ ...enterprise, productTag: ptAux });
-        sendData('DELETE', `product-tag/${ enterprise.id }/${ pt.id }`, null);
+        sendData('PUT', 'product-tag/status', body);
     }
 
     const deletePhone = (phone) => { 
@@ -131,6 +148,17 @@ const AdminEnterprise = ({ navigation, route }) => {
 
         setEnterprise({ ...enterprise, banks: BanksAux });
         sendData('PUT', 'bank/enterprise', { ...bank, enterpriseId: enterprise.id });
+    }
+
+    const deleteProduct = (product) => {
+        const productAux = enterprise.products.filter(i => i != product);
+        const body = {
+            productId: product.id,
+            enterpriseId: enterprise.id
+        }
+
+        setEnterprise({ ...enterprise, products: productAux });
+        sendData('PUT', 'product/status', body);
     }
 
     const refresh = async() => {
@@ -296,6 +324,34 @@ const AdminEnterprise = ({ navigation, route }) => {
         </View>
     )
 
+    const RenderItemProduct = ({ item }) => (
+        <View style={AEStyles.viewModalItem}>
+            <View style={AEStyles.item}>
+                <TouchableOpacity 
+                    style={{ ...AEStyles.viewRow, justifyContent: 'space-between' }}
+                    onPress={() => gotoNewProduct('update', item)}
+                    >
+                    <View>
+                        <Text style={AEStyles.textItem}>
+                            {item.name}
+                        </Text>
+                    </View> 
+                    <Icon 
+                        color='gray'
+                        size={20} 
+                        name='close' 
+                        type='ionicon'
+                        onPress={
+                            () => alerButtom('Peligro!', 
+                            `Si se elimina ${item.name} se borraran TODO lo relacionado con el producto, desea continuar?`,
+                            () => deleteProduct(item)) 
+                        }
+                    /> 
+                </TouchableOpacity>
+            </View>
+        </View>
+    )
+
     const RenderItemProducTag = ({ item }) => (
         <View style={AEStyles.viewModalItem}>
             <View style={AEStyles.item}>
@@ -392,6 +448,32 @@ const AdminEnterprise = ({ navigation, route }) => {
         setEnterprise({ ...enterprise, hourDay: data });
     }
 
+    const callBackProduct = (type, data) => {
+        const aux = enterprise.products;
+       
+        switch(type) {
+            case 'create':
+                aux.push(data);
+                break;
+            
+            case 'update':
+                aux.map(product => {
+                    if(product.id == data.id) {
+                        return data;
+                    }
+
+                    return product;
+                });
+            break;
+
+            default:
+                Alert.alert('Error', type + ' No valido');
+                break;
+        }
+
+        setEnterprise({ ...enterprise, products: aux });
+    }
+
     const gotoNewBank = () => {
         const bodyAux = {
             type: 'enterprise', 
@@ -469,11 +551,13 @@ const AdminEnterprise = ({ navigation, route }) => {
                 addPress={() => {
                     (modal.type == 'Bancos')
                     ? gotoNewBank()
+                    : (modal.type == 'Productos')
+                    ? gotoNewProduct('create')
                     : setModal2({ ...modal2, flag: true })
                 }}
                     
                 addButton={
-                    (modal.type == 'Telefono' || modal.type == 'Seccion de productos' || modal.type == 'Bancos')
+                    (modal.type == 'Telefono' || modal.type == 'Seccion de productos' || modal.type == 'Bancos' || modal.type == 'Productos')
                     ? true
                     : null
                 }
@@ -484,6 +568,8 @@ const AdminEnterprise = ({ navigation, route }) => {
                     ? RenderItemProducTag
                     : (modal.type == 'Bancos')
                     ? RenderItemBank
+                    : (modal.type == 'Productos')
+                    ? RenderItemProduct
                     : null
                 }
                 data={
@@ -493,7 +579,9 @@ const AdminEnterprise = ({ navigation, route }) => {
                     ? enterprise.productTag
                     : (modal.type == 'Bancos')
                     ? enterprise.banks
-                    : null 
+                    : (modal.type == 'Productos')
+                    ? enterprise.products
+                    : null
                 }
             />
             <HeaderC 
@@ -561,7 +649,7 @@ const AdminEnterprise = ({ navigation, route }) => {
                     />
                     <ItemC
                         title='Productos'
-                        action={() => {}}
+                        action={() => setModal({ type: 'Productos', flag: true })}
                     />
                     <ItemC
                         title='Seccion de productos'
@@ -700,9 +788,9 @@ const AEStyles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
         elevation: 5
-      },
+    },
 
-      button: {
+    button: {
         marginVertical: '3%',
         alignItems: "center",
         justifyContent: "center",
