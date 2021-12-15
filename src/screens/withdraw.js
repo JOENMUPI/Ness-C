@@ -12,7 +12,7 @@ import {
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Http from '../components/Http';
-import { Icon,  Avatar } from 'react-native-elements';
+import { Icon } from 'react-native-elements';
 
 import HeaderC from '../components/Header';
 import ModalSearchC from '../components/ModalSearchList';
@@ -20,6 +20,8 @@ import ModalListC from '../components/ModalList';
 import Field from '../components/Field';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const WITHDRAW_BLANK = {
     id: 0,
@@ -217,7 +219,7 @@ const Withdraw = ({ navigation, route }) => {
                         (item.status == undefined)
                         ? 'Pendiente'
                         : (item.status)
-                        ? 'Apovado'
+                        ? 'Apobado'
                         : 'Denegado'
                     }
                 </Text>
@@ -239,7 +241,7 @@ const Withdraw = ({ navigation, route }) => {
                 </View>
                 <View style={WithdrawtStyles.viewRow}>
                     <Text style={{ ...WithdrawtStyles.ModalListItemText, color: 'gray' }}>
-                       Titutlar:  
+                       Titutlar: 
                     </Text>
                     <Text style={WithdrawtStyles.ModalListItemText}>
                         {item.countBank.titularName}
@@ -258,7 +260,7 @@ const Withdraw = ({ navigation, route }) => {
                         Cuenta:  
                     </Text>
                     <Text style={WithdrawtStyles.ModalListItemText}>
-                        {item.countBank.countNuma}
+                        {item.countBank.countNum}
                     </Text>    
                 </View>
                 <View style={WithdrawtStyles.viewRow}>

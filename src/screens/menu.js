@@ -8,6 +8,8 @@ import { Icon } from 'react-native-elements';
 import * as BasicColors from '../styles/basic';
 
 import Home from './home';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const SIZE = 20;
 const NEUTRAL_THEME_COLOR = 'gray';
@@ -68,7 +70,7 @@ const  Menu = ({ navigation }) => {
                     <DrawerItemC
                         iconName='basket'
                         label='mis pedidos'
-                        action={() => alert('kukuu')}
+                        action={() => navigation.navigate('Cart')}
                     />
                     <DrawerItemC
                         iconName='briefcase'
@@ -78,7 +80,7 @@ const  Menu = ({ navigation }) => {
                     <DrawerItemC
                         iconName='settings'
                         label='Ajustes'
-                        action={() => alert('kukuu')}
+                        action={() => goTo('User')}
                     />
                     <DrawerItemC
                         iconName='log-out'

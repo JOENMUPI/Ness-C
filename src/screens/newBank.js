@@ -19,10 +19,12 @@ import ModalListC from '../components/ModalSearchList';
 import Field from '../components/Field';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const COUNT_BANK_BLANK = {
     bankId: 0,
-    titularId: 0,
+    titularId: '',
     titularName: '',
     bankName: '',
     countNum: ''
@@ -144,7 +146,7 @@ const newBank = ({ navigation, route }) => {
             <HeaderC 
                 title='Nueva cuenta bancaria'
                 leftIconAction={() => navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={newBankStyle.body}>
             {
@@ -183,7 +185,7 @@ const newBank = ({ navigation, route }) => {
                                 blurOnSubmit={false}
                                 onChangeText={titularName => setBank({ ...bank, titularName })}
                                 onSubmitEditing={() => titutlarIdInput.focus()}
-                                value={bank.titutlarName}
+                                value={bank.titularName}
                             />
                         </View>
                     </View>
@@ -195,10 +197,11 @@ const newBank = ({ navigation, route }) => {
                             <TextInput
                                 ref={ref => titutlarIdInput = ref}
                                 placeholder="V-24921844..."
+                                    keyboardType='numeric'
                                 blurOnSubmit={false}
                                 onChangeText={titularId => setBank({ ...bank, titularId })}
                                 onSubmitEditing={() => bankNumInput.focus()}
-                                value={bank.titutlarName}
+                                value={bank.titularId}
                             />
                         </View>
                     </View>

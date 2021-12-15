@@ -4,11 +4,11 @@ import { Icon } from 'react-native-elements';
 import * as BasicColors from '../styles/basic';
 
 
-const ModalListC = ({ data, vissible, onCancel, onPressItem, tittle, renderItem }) => { 
+const ModalListC = ({ data, vissible, onCancel, onPressItem, tittle, renderItem }) => {  
     const [datax, setData] = useState(data); 
     const [value, setValue] = useState(null);
 
-    const searchItems = text => {
+    const searchItems = text => { console.log('hola', data)
         const newData = data.filter(item => {
             const textData = text.toUpperCase();
             let itemData = `${item.name.toUpperCase()}`;
@@ -56,8 +56,12 @@ const ModalListC = ({ data, vissible, onCancel, onPressItem, tittle, renderItem 
                 </View>
             </View> 
             {
-                (value == null)
-                ? <FlatList
+                (value == null || value.length < 1)
+                ? (data.length < 1) 
+                ? <Text style={styles.textMessage}>
+                    No hay informacion de momento.
+                </Text>
+                : <FlatList
                     style = {styles.list}
                     data={data}
                     renderItem={(item) => (renderItem) ? renderItem(item) : renderItemAux(item)}

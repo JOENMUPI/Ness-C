@@ -16,6 +16,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Http from '../components/Http';
 import HeaderC from '../components/Header';
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const MyDirections = ({ navigation }) => { 
     const [directions, setDirections] = useState([]);
@@ -143,7 +145,7 @@ const MyDirections = ({ navigation }) => {
             <HeaderC 
                 title='Mis direcciones'
                 leftIconAction={() => navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={directionsStyles.body}>
                 {

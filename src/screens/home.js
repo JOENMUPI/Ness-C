@@ -12,18 +12,24 @@ import {
     RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Icon } from 'react-native-elements';
+import { Icon, Image, Avatar } from 'react-native-elements';
 
 import Http from '../components/Http';
+import SearchBar from '../components/SearchBar';
+import ModalListC from '../components/ModalSearchList';
 import HeaderC from '../components/Header';
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 
 const Home = ({ navigation, route }) => { 
-    const [me, setMe] = useState({ img: null });
+    const [loading, setLoading] = useState({ loading: false, refresh: false, tag: false });
+    const [search, setSearch] = useState({ data: [], loading: false, flag: false, text: '' });
+    const [me, setMe] = useState({ img: null, name: '' });
     const [tags, setTags] = useState([]);
-    const [searchBar, setSearchBar] = useState({ flag: false, text: '' });
-    const [loading, setLoading] = useState({ loading: false, refresh: false });
+    const [modal, setModal] = useState(false);
+    const [enterprises, setEnterprises] = useState([]);
 
     const toast = (message) => { 
         ToastAndroid.showWithGravity(
@@ -32,10 +38,59 @@ const Home = ({ navigation, route }) => {
             ToastAndroid.TOP
         );
     }
+
+    const handleTag = (tag) => {
+        getEnterprises(tag.id);
+        setModal(true);
+    } 
+
+    const gotoEnterprise = (data) => {
+        setModal(false);
+        navigation.navigate('Enterprise', { data });
+    }
     
     const getMee = async () => {
         return JSON.parse(await AsyncStorage.getItem('user'));
     }
+
+    const seacrhEnterpises = async (value) => { 
+        setSearch({ ...search, loading: true });
+        const token = await AsyncStorage.getItem('token'); 
+        const data = await Http.send('GET', `enterprise/search/${value}`, null, token); 
+        let aux = [];
+        
+        if(!data) {
+            Alert.alert('Fatal Error', 'No data from server...');
+            
+        } else { 
+            switch(data.typeResponse) {
+                case 'Success':
+                    toast(data.message);    
+                    aux = data.body; 
+                    break;
+
+                case 'Fail':
+                    data.body.errors.forEach(element => {
+                        toast(element.text);
+                    });
+                    break;
+                    
+                default:
+                    Alert.alert(data.typeResponse, data.message);
+                    break;
+            }
+        }
+
+        setSearch({ ...search, data: aux, loading: false, flag: true });
+    }
+
+    const renderItem = ({ item }) => (
+        <View>
+            <Text>
+                {item.name}
+            </Text>
+        </View>
+    )  
 
     const refreshUser = async () => {
         setLoading({ ...loading, refresh: true });
@@ -92,6 +147,35 @@ const Home = ({ navigation, route }) => {
         }
     }
 
+    const getEnterprises = async (tagId) => {
+        setLoading({ ...loading, tag: true });
+        const data = await Http.send('GET', `enterprise/tag/${tagId}`, null, null); 
+
+        if(!data) {
+            Alert.alert('Fatal Error', 'No data from server...');
+            
+        } else { 
+            switch(data.typeResponse) {
+                case 'Success': 
+                    toast(data.message); 
+                    setEnterprises(data.body);
+                    break;
+                    
+                case 'Fail':
+                    data.body.errors.forEach(element => {
+                        toast(element.text);
+                    });
+                    break;
+
+                default:
+                    Alert.alert(data.typeResponse, data.message);
+                    break;
+            }    
+        }
+
+        setLoading({ ...loading, tag: false });
+    }
+
     const refresh = () => {
         refreshUser().then(async (res) =>  {
             await AsyncStorage.setItem('user', JSON.stringify(res));
@@ -99,6 +183,36 @@ const Home = ({ navigation, route }) => {
             setLoading({ ...loading, refresh: true });
         });
     }
+
+    const renderModalItem = ({ item }) => (
+        <View style={{ ...homeStyles.item, marginTop: '3%'}}>
+            <TouchableOpacity 
+                style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+                onPress={() => gotoEnterprise(item)}
+                >
+                <View style={{ flexDirection: 'row' }}>
+                    {
+                        (item.img)
+                        ?
+                        <Image
+                            source={{ uri: `data:image/png;base64,${item.img}` }}
+                            containerStyle={homeStyles.img}
+                        />
+                        : <Avatar 
+                            size="medium"
+                            containerStyle={{ ...homeStyles.img,  backgroundColor: 'lightgray' }}
+                            icon={{ name: 'camera-outline', color: 'white', type: 'ionicon', size: 40 }}   
+                        />
+                    }
+                    <View style={{ paddingLeft: '3%' }}>    
+                        <Text style={homeStyles.textItem}>
+                            {item.name}
+                        </Text>
+                    </View>
+                </View>  
+            </TouchableOpacity>
+        </View>
+    )
 
     useEffect(() => {  
         getMee().then(res => setMe(res));
@@ -110,10 +224,26 @@ const Home = ({ navigation, route }) => {
 
     return (
         <View style={homeStyles.container}>
+            <ModalListC       
+                vissible={modal}
+                tittle='Negocio'
+                renderItem={renderModalItem}
+                onCancel={() => setModal(false)}
+                data={enterprises}
+            />
+            <SearchBar
+                arrayData={search.data}
+                vissible={search.flag}
+                loadingFlag={search.loading}
+                onCancel={() => setSearch({ ...search, flag: false, text: '' })}
+                renderItem={renderModalItem}
+                searchF={value => seacrhEnterpises(value)}
+                valuex={search.text}
+            />
             <HeaderC 
                 leftIcon='menu'
                 leftIconAction={() => navigation.openDrawer()}
-                cartAction={()=> alert('llevalo a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={homeStyles.body}>
                 {
@@ -143,14 +273,14 @@ const Home = ({ navigation, route }) => {
                             <TextInput
                                 autoCapitalize="none"
                                 blurOnSubmit={false}
-                                onChangeText={text => setSearchBar({ ...searchBar, text })}
-                                onSubmitEditing={() => Alert.alert('envia el seach')}
+                                onChangeText={text => setSearch({ ...search, text })}
+                                onSubmitEditing={() => seacrhEnterpises(search.text)}
                                 placeholder="¿Que deseas hoy?"
                                 style={{ color: 'gray', width: '90%' }}
                             />
                             {
-                                (searchBar.flag)
-                                ? <ActivityIndicator size="small" color={BasicColors.THEME_COLOR_MAIN}/>
+                                (search.loading)
+                                ? <ActivityIndicator size="small" color={BasicColors.THEME_COLOR_SEC}/>
                                 : <Icon name='search-outline' color='gray' type='ionicon' size={20}/>
                             }
                         </View>
@@ -158,7 +288,7 @@ const Home = ({ navigation, route }) => {
                             {
                                 tags.map((item, index) => (
                                     <TouchableOpacity 
-                                        onPress={() => alert('mira la lista')}
+                                        onPress={() => handleTag(item)}
                                         style={homeStyles.viewTag}
                                         key={index}
                                         >
@@ -223,7 +353,8 @@ const homeStyles = StyleSheet.create({
 
     viewTag: {
         borderRadius: 10, 
-        padding: '3%', 
+        borderWidth: 10,
+        borderColor: BasicColors.THEME_COLOR_SEC,
         backgroundColor: BasicColors.THEME_COLOR_SEC, 
         marginTop: '3%', 
         elevation: 2
@@ -244,5 +375,38 @@ const homeStyles = StyleSheet.create({
         color: 'white', 
         fontSize: 30, 
         fontWeight: 'bold'
+    },
+
+    viewText: {
+        flexDirection: "row", 
+        alignItems: 'center'
+    },
+
+    viewItem: {
+        padding: '2%',
+        width: '100%',
+        backgroundColor: BasicColors.BACKGROUND_COLOR,
+    },
+
+    item: {
+        paddingVertical: '1%',
+        backgroundColor: 'white' , 
+        borderRadius: 10, 
+        paddingHorizontal: '3%',
+        paddingVertical: '4%',
+        justifyContent: 'space-between' 
+    }, 
+
+    textItem: {
+        fontWeight: "bold", 
+        color: BasicColors.THEME_COLOR_SEC, 
+        fontSize: 20
+    },
+
+    img: {
+        borderRadius: 5, 
+        width: 65, 
+        height: 65, 
+        resizeMode: 'contain'
     },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
     Alert, 
     ActivityIndicator, 
@@ -21,6 +21,8 @@ import ImagePicker from '../components/ImagePicker';
 import HeaderC from '../components/Header';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const MAX_STEP = 3;
 const PRODUCT_BLANK= {
@@ -63,6 +65,18 @@ const newProduct = ({ navigation, route }) => {
             message,
             ToastAndroid.SHORT,
             ToastAndroid.TOP
+        );
+    }
+
+
+    const alerButtom = (title, description, okAction) => {
+        return Alert.alert(
+            title, 
+            description,
+            [
+                { text: "No", style: "cancel" }, 
+                { text: "Si", onPress: okAction}
+            ], { cancelable: false }
         );
     }
 
@@ -130,23 +144,61 @@ const newProduct = ({ navigation, route }) => {
 
         switch(modal.type) {
             case 'Extra': 
-                let newExtraAux = newExtra;
-                
-                (newExtra.price < 0) 
-                ? newExtraAux.price = 0
-                : newExtraAux.price = Number.parseFloat(newExtraAux.price).toFixed(2); 
+                if(newExtra.name.length < 1) {
+                    Alert.alert('Disculpe', 'Debe llenar los campos requeridos');
 
-                aux = product.extras;
-                aux.push(newExtraAux);
-                newProduct.extras = aux; 
-                setNewExtra(NEW_EXTRA_BLANK);
+                } else {
+                    let newExtraAux = newExtra;
+                    
+                    (newExtra.price < 0) 
+                    ? newExtraAux.price = 0
+                    : newExtraAux.price = Number.parseFloat(newExtraAux.price).toFixed(2); 
+                    
+                    aux = product.extras;
+                    
+                    if (newExtraAux.id == 0) {
+                        aux.push(newExtraAux);
+                        
+                    } else {
+                        aux = aux.map(item => {
+                            if(item.id == newExtraAux.id) {
+                                return newExtraAux;
+                            } 
+    
+                            return item;
+                        });
+                    }
+    
+                    newProduct.extras = aux; 
+                    setNewExtra(NEW_EXTRA_BLANK);
+                }
+            
                 break;
             
             case 'Variante': 
-                aux = product.variants; 
-                aux.push(newVariant);
-                newProduct.variants = aux; 
-                setNewVariant(NEW_VARINAT_BLANK);
+                if(newVariant.name.length < 1) {
+                    Alert.alert('Disculpe', 'Debe llenar los campos requeridos');
+
+                } else {
+                    aux = product.variants; 
+                    
+                    if (newVariant.id == 0) {
+                        aux.push(newVariant);
+                        
+                    } else {
+                        aux = aux.map(item => {
+                            if(item.id == newVariant.id) {
+                                return newVariant;
+                            } 
+    
+                            return item;
+                        });
+                    }
+                    
+                    newProduct.variants = aux; 
+                    setNewVariant(NEW_VARINAT_BLANK);
+                }
+
                 break;
             
             default:
@@ -174,7 +226,8 @@ const newProduct = ({ navigation, route }) => {
         setLoading(true);
         const token = await AsyncStorage.getItem('token');
         const body = { ...product, enterpriseId: route.params.enterpriseId } 
-        const data = await Http.send('POST', 'product', body, token);
+        let endpoint = (route.params.type == 'update') ? endpoint = 'PUT' : endpoint = 'POST';        
+        const data = await Http.send(endpoint, 'product', body, token);
 
         if(!data) {
             Alert.alert('Fatal Error', 'No data from server...');
@@ -206,7 +259,7 @@ const newProduct = ({ navigation, route }) => {
     const TagC = ({ text, line2, action, status, deleteAction }) => (
         <View style={NPStyles.viewTag}>
             <TouchableOpacity 
-                onPress={() => (action) ? action : {}}
+                onPress={(action) ? action : {}}
                 style={{ width: '80%', ...NPStyles.viewRow }}
                 >
                 <CheckBox checked={status}/>
@@ -331,7 +384,7 @@ const newProduct = ({ navigation, route }) => {
             <HeaderC 
                 title={(route.params.type == 'update') ? 'Editar producto' : 'Nuevo producto'}
                 leftIconAction={() => navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={NPStyles.body}>
                 <ScrollView>
@@ -358,7 +411,28 @@ const newProduct = ({ navigation, route }) => {
                                         onPress={pressAvatar} 
                                     />
                                 }
-                            </View>              
+                            </View>     
+                            {
+                                (route.params.type == 'update')
+                                ? <View>
+                                    <Text style={NPStyles.textInput}>
+                                        Disponibilidad del producto   
+                                    </Text>
+                                    <TouchableOpacity 
+                                        onPress={() => setProduct({ ...product, status: !product.status })}
+                                        style={NPStyles.viewRow}
+                                        >
+                                        <CheckBox
+                                            onPress={() => setProduct({ ...product, status: !product.status })} 
+                                            checked={product.status}
+                                        />
+                                        <Text style={{ color: 'gray', fontWeight: 'bold' }}>
+                                            Disponible  
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View> 
+                                : null
+                            }         
                             <View>
                                 <Text style={NPStyles.textInput}>
                                     Nombre del producto   
@@ -380,6 +454,15 @@ const newProduct = ({ navigation, route }) => {
                                 <Text style={NPStyles.textInput}>
                                     Descripcion   
                                 </Text>
+                                {
+                                    (!descriptionFlag)
+                                    ? null
+                                    : <TouchableOpacity style={NPStyles.button}>
+                                        <Text style={NPStyles.textButton}>
+                                            Finalizar la descripcion
+                                        </Text>
+                                    </TouchableOpacity>
+                                }  
                                 <View style={NPStyles.input}>
                                     <TextInput
                                         ref={ref => descriptionInput = ref}
@@ -392,16 +475,7 @@ const newProduct = ({ navigation, route }) => {
                                         onEndEditing={() => setDescriptionFlag(false)}
                                         value={product.description}
                                     />
-                                </View>  
-                                {
-                                    (!descriptionFlag)
-                                    ? null
-                                    : <TouchableOpacity style={NPStyles.button}>
-                                        <Text style={NPStyles.textButton}>
-                                            Listo
-                                        </Text>
-                                    </TouchableOpacity>
-                                }  
+                                </View>    
                             </View>
                         </View>
                         : (step == 2)
@@ -457,9 +531,14 @@ const newProduct = ({ navigation, route }) => {
                                     : product.variants.map((item, index) => (
                                         <TagC
                                             key={index}
+                                            action={() => { console.log('hola');setModal({ ...modal, type: 'Variante', two: true }); setNewVariant(item) }}
                                             status={item.status}
                                             text={item.name}
-                                            deleteAction={() => deleteVariant(item)} 
+                                            deleteAction={() =>
+                                                (route.params.type != 'update') 
+                                                ? deleteVariant(item)
+                                                : alerButtom('Disculpe', `Realmente desea borrar ${item.name}?`, () => deleteVariant(item))
+                                            } 
                                         />
                                     ))
                                 }
@@ -482,35 +561,21 @@ const newProduct = ({ navigation, route }) => {
                                     product.extras.map((item, index) => (
                                         <TagC
                                             key={index}
+                                            action={() => { setModal({ ...modal, type: 'Extra', two: true }); setNewExtra(item) }}
                                             status={item.status}
                                             text={item.name}
                                             line2={'$ ' + item.price}
-                                            deleteAction={() => deleteExtra(item)} 
+                                            deleteAction={() => 
+                                                (route.params.type != 'update') 
+                                                ? deleteExtra(item)
+                                                : alerButtom('Disculpe', `Realmente desea borrar ${item.name}?`, () => deleteExtra(item))
+                                                
+                                            } 
                                         />
                                     ))
                                 }
                             </View>
                         </View>
-                    }
-                    {
-                        (descriptionFlag)
-                        ? null
-                        : <TouchableOpacity
-                            style={NPStyles.button}
-                            onPress={handleButton}
-                            >     
-                            {
-                                (loading) 
-                                ? <ActivityIndicator size="small" color={BasicColors.THEME_COLOR_SEC} /> 
-                                : <Text style={NPStyles.textButton}>
-                                    {
-                                        (step == MAX_STEP) 
-                                        ? 'Finalizar'
-                                        : 'Siguiente'
-                                    }
-                                </Text>
-                            }
-                        </TouchableOpacity>
                     }
                     {
                         (step == 1)
@@ -527,6 +592,26 @@ const newProduct = ({ navigation, route }) => {
                         </View>
                     }
                 </ScrollView>
+                {
+                    (descriptionFlag)
+                    ? null
+                    : <TouchableOpacity
+                        style={NPStyles.button}
+                        onPress={handleButton}
+                        >     
+                        {
+                            (loading) 
+                            ? <ActivityIndicator size="small" color={BasicColors.THEME_COLOR_SEC} /> 
+                            : <Text style={NPStyles.textButton}>
+                                {
+                                    (step == MAX_STEP) 
+                                    ? 'Finalizar'
+                                    : 'Siguiente'
+                                }
+                            </Text>
+                        }
+                    </TouchableOpacity>
+                }
             </View>
         </View>
     )

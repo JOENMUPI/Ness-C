@@ -15,6 +15,8 @@ import { Icon } from 'react-native-elements';
 
 import HeaderC from '../components/Header';
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 
 const AdminEnterprise = ({ navigation }) => { 

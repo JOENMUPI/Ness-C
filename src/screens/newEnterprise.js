@@ -22,6 +22,8 @@ import ModalListC from '../components/ModalSearchList';
 import Http from '../components/Http';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 
 const MAX_STEP = 5;
@@ -307,7 +309,7 @@ const NewEnterprise = ({ navigation }) => {
             <HeaderC 
                 title='Nuevo negocio'
                 leftIconAction={()=> navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={NEStyles.body}>
                 <ScrollView>

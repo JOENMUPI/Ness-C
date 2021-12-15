@@ -17,6 +17,8 @@ import Http from '../components/Http';
 import HeaderC from '../components/Header';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const MAX_STEP = 2;
 
@@ -137,7 +139,7 @@ const NewHourDay = ({ navigation, route }) => {
             <HeaderC 
                 title='Horarios laborales'
                 leftIconAction={() => navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={NHDStyles.body}>
                 <ScrollView>

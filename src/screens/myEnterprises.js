@@ -7,6 +7,7 @@ import {
     TextInput, 
     ToastAndroid, 
     TouchableOpacity, 
+    ScrollView,
     View
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,6 +18,8 @@ import HeaderC from '../components/Header';
 import Field from '../components/Field';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const abortController = new AbortController();
 
@@ -104,46 +107,48 @@ const MyEnterprises = ({ navigation }) => {
             <HeaderC 
                 title='Mis negocios'
                 leftIconAction={goBack}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={MEStyles.body}>
-                <View style={{ marginBottom: '3%' }}>
-                    <Text style={MEStyles.firstText}>
-                        Todos los usuarios pueden enviar solicitud para 
-                        registrar sus negocios en la plataforma.
-                    </Text>
-                    <Text style={MEStyles.text}>
-                        Cada administrador tiene un codigo unico valido 
-                        solo con el usuario por negocio. 
-                    </Text>
-                    <Text style={MEStyles.text}>
-                        Si desea ingresar a un negocio introduzca la 
-                        clave empresarial que valida al usuario con el negocio como un 
-                        administrador legitimo del mismo.   
-                    </Text>
-                </View>
-                <View style={MEStyles.section}>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Icon name='lock-closed-outline' color='gray' type='ionicon' size={20} />
-                        <TextInput
-                            placeholder="Clave Empresarial"
-                            autoCapitalize="none"
-                            blurOnSubmit={false}
-                            style={MEStyles.textInput}
-                            secureTextEntry={!vissiblePassFlag}
-                            onChangeText={code => setCode(code)}
-                            onSubmitEditing={handlerCode}
-                            value={code}
+                <ScrollView>
+                    <View style={{ marginBottom: '3%' }}>
+                        <Text style={MEStyles.firstText}>
+                            Todos los usuarios pueden enviar solicitud para 
+                            registrar sus negocios en la plataforma.
+                        </Text>
+                        <Text style={MEStyles.text}>
+                            Cada administrador tiene un codigo unico valido 
+                            solo con el usuario por negocio. 
+                        </Text>
+                        <Text style={MEStyles.text}>
+                            Si desea ingresar a un negocio introduzca la 
+                            clave empresarial que valida al usuario con el negocio como un 
+                            administrador legitimo del mismo.   
+                        </Text>
+                    </View>
+                    <View style={MEStyles.section}>
+                        <View style={{ flexDirection: 'row' }}>
+                            <Icon name='lock-closed-outline' color='gray' type='ionicon' size={20} />
+                            <TextInput
+                                placeholder="Clave Empresarial"
+                                autoCapitalize="none"
+                                blurOnSubmit={false}
+                                style={MEStyles.textInput}
+                                secureTextEntry={!vissiblePassFlag}
+                                onChangeText={code => setCode(code)}
+                                onSubmitEditing={handlerCode}
+                                value={code}
+                            />
+                        </View>
+                        <CheckBox
+                            containerStyle={MEStyles.eye}
+                            checkedIcon={<Icon name='eye-outline' color='gold' type='ionicon' size={20}/>}
+                            uncheckedIcon={<Icon name='eye-off-outline' color='grey' type='ionicon' size={20}/>}
+                            checked={vissiblePassFlag}
+                            onPress={() => setVissiblePassFlag(!vissiblePassFlag)}
                         />
                     </View>
-                    <CheckBox
-                        containerStyle={MEStyles.eye}
-                        checkedIcon={<Icon name='eye-outline' color='gold' type='ionicon' size={20}/>}
-                        uncheckedIcon={<Icon name='eye-off-outline' color='grey' type='ionicon' size={20}/>}
-                        checked={vissiblePassFlag}
-                        onPress={() => setVissiblePassFlag(!vissiblePassFlag)}
-                    />
-                </View>
+                </ScrollView>
                 <TouchableOpacity 
                     onPress={handlerCode} 
                     style={MEStyles.button}

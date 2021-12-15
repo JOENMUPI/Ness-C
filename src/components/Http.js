@@ -1,5 +1,6 @@
-const url = 'http://192.168.0.106:8000/'
-const urlx = 'https://ness2.herokuapp.com/'   
+const urlx = 'http://192.168.1.107:8000/'
+const url = 'http://192.168.43.123:8000/'
+const urlxx = 'https://ness2.herokuapp.com/'   
 
 const send = async (method, endpoint, body, token, signal) => {
     let response;

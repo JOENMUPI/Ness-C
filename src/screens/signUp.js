@@ -16,6 +16,8 @@ import Http from '../components/Http';
 
 import { SignUpStyles } from '../styles/signUp';
 import * as basicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 
 const MAX_STEP = 3;

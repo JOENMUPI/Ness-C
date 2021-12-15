@@ -20,6 +20,8 @@ import ModalListC from '../components/ModalList';
 import ImagePicker from '../components/ImagePicker';
 
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const DEPOSIT_BLANK = {
     id: 0,
@@ -251,7 +253,7 @@ const Deposit = ({ navigation }) => {
                         (item.status == undefined)
                         ? 'Pendiente'
                         : (item.status)
-                        ? 'Apovado'
+                        ? 'Apobado'
                         : 'Denegado'
                     }
                 </Text>

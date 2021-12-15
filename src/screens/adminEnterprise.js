@@ -21,6 +21,8 @@ import ModalListC from '../components/ModalList';
 import HeaderC from '../components/Header';
 import Fields from '../components/Field';
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const MODAL_BLANK = {
     data: '', 
@@ -30,9 +32,10 @@ const MODAL_BLANK = {
 
 const AdminEnterprise = ({ navigation, route }) => {  
     const [enterprise, setEnterprise] = useState(route.params.enterprise);
-    const [modal, setModal] = useState({ type: 'Telefono', flag: false });
+    const [modal, setModal] = useState({ type: 'Telefono', flag: false, history: false });
     const [modal2, setModal2] = useState(MODAL_BLANK);
     const [productTagSelected, setProductTagSelected] = useState({ name: '', id: 0});
+    const [sell, setSell] = useState([]);
     const [loading, setLoading] = useState({ main: false, refresh: false });
 
     const toast = (message) => { 
@@ -55,19 +58,24 @@ const AdminEnterprise = ({ navigation, route }) => {
     }
 
     const gotoNewProduct = (type, data) => {
-        let body = { 
-            type,
-            enterpriseId: enterprise.id,
-            productTags: enterprise.productTag,
-            callBack: callBackProduct.bind(this)
-        }
-
-        if(data) {
-            body = { ...body, data }
-        }
+        if(enterprise.productTag.length < 1) {
+            Alert.alert('Discule', 'Requiere poseer como minimo una seccion de productos en  su nnegocio para crear prodcutos');
         
-        setModal({ ...modal, flag: false }); 
-        navigation.navigate('NewProduct', { ...body });
+        } else {
+            let body = { 
+                type,
+                enterpriseId: enterprise.id,
+                productTags: enterprise.productTag,
+                callBack: callBackProduct.bind(this)
+            }
+    
+            if(data) {
+                body = { ...body, data }
+            }
+            
+            setModal({ ...modal, flag: false }); 
+            navigation.navigate('NewProduct', { ...body });
+        }
     }
 
     const handlerModal2Button = () => {
@@ -161,8 +169,65 @@ const AdminEnterprise = ({ navigation, route }) => {
         sendData('PUT', 'product/status', body);
     }
 
+    const getSell = async () => {
+        const token = await AsyncStorage.getItem('token'); 
+        const data = await Http.send('GET', `enterprise/sell/${enterprise.id}`, null, token); 
+        
+        if(!data) {
+            Alert.alert('Fatal Error', 'No data from server...');
+            navigation.goBack(); 
+
+        } else { 
+            switch(data.typeResponse) {
+                case 'Success': 
+                    toast(data.message);
+                    setSell(data.body); 
+                    break;
+                    
+                case 'Fail':
+                    data.body.errors.forEach(element => {
+                        toast(element.text);
+                    });
+                    break; 
+
+                default:
+                    Alert.alert(data.typeResponse, data.message);
+                    break; 
+            }    
+        }
+    }
+
+    const sendTesis = async (item) => {
+        const token = await AsyncStorage.getItem('token');
+        const body = { billId: item.bill.id, enterpriseId: enterprise.id, mount: item.bill.mount }
+        const data = await Http.send('POST', `enterprise/tesis`, body, token); 
+        
+        if(!data) {
+            Alert.alert('Fatal Error', 'No data from server...');
+            navigation.goBack(); 
+
+        } else { 
+            switch(data.typeResponse) {
+                case 'Success': 
+                    toast(data.message);
+                    break;
+                    
+                case 'Fail':
+                    data.body.errors.forEach(element => {
+                        toast(element.text);
+                    });
+                    break; 
+
+                default:
+                    Alert.alert(data.typeResponse, data.message);
+                    break; 
+            }    
+        }
+    }
+
     const refresh = async() => {
         setLoading({ ...loading, refresh: true });
+        getSell();
         const token = await AsyncStorage.getItem('token'); 
         const data = await Http.send('GET', `enterprise/${enterprise.id}`, null, token); 
         
@@ -328,13 +393,41 @@ const AdminEnterprise = ({ navigation, route }) => {
         <View style={AEStyles.viewModalItem}>
             <View style={AEStyles.item}>
                 <TouchableOpacity 
-                    style={{ ...AEStyles.viewRow, justifyContent: 'space-between' }}
+                    style={{ flexDirection: 'row', justifyContent: 'space-between' }}
                     onPress={() => gotoNewProduct('update', item)}
                     >
-                    <View>
-                        <Text style={AEStyles.textItem}>
-                            {item.name}
-                        </Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        {
+                            (item.img)
+                            ?
+                            <Image
+                                source={{ uri: `data:image/png;base64,${item.img}` }}
+                                containerStyle={AEStyles.img}
+                            />
+                            : <Avatar 
+                                size="medium"
+                                containerStyle={{ ...AEStyles.img,  backgroundColor: 'lightgray' }}
+                                icon={{ name: 'camera-outline', color: 'white', type: 'ionicon', size: 40 }}   
+                            />
+                        }
+                        <View style={{ paddingLeft: '3%' }}>    
+                            <Text style={AEStyles.textItem}>
+                                {item.name}, {item.productTag.name}
+                            </Text>
+                            <Text style={{ fontWeight: 'bold', color: (item.status) ? 'green' : 'red' }}>  
+                                {
+                                    (item.status)
+                                    ? 'Disponible'
+                                    : 'No disponible'
+                                }
+                            </Text>
+                            <Text style={{ ...AEStyles.textItem, color: 'green' }}>
+                                $ {item.price}
+                            </Text>
+                            <Text style={{ color: 'gray' }}>
+                                {item.description}
+                            </Text>
+                        </View>
                     </View> 
                     <Icon 
                         color='gray'
@@ -375,6 +468,173 @@ const AdminEnterprise = ({ navigation, route }) => {
                     />
                 </TouchableOpacity>
             </View>
+        </View>
+    )
+
+    const handleButton = (data) => { 
+        const sellAux = sell.filter(i => i.bill.id != data.bill.id);
+        setSell(sellAux)
+        sendTesis(data);
+    }
+
+    const ModalRenderItemHistory = ({ item }) => (
+        <View>
+            {
+                (item.bill.status) 
+                ? null
+                :   
+                <View style={{ ...AEStyles.item, marginTop: '3%' }}>
+                    <View style={AEStyles.viewRow}>
+                        <Text style={AEStyles.ModalListItemText}>
+                            Fecha:  
+                        </Text>
+                        <Text style={{ ...AEStyles.ModalListItemText, color: 'gray' }}>
+                            {item.bill.date.toString().split('T')[0]}, {item.bill.date.toString().split('T')[1].split('.')[0]}
+                        </Text>    
+                    </View>
+                    <View style={AEStyles.viewRow}>
+                        <Text style={AEStyles.ModalListItemText}>
+                            Cliente:  
+                        </Text>
+                        <Text style={{ ...AEStyles.ModalListItemText, color: 'gray' }}>
+                            {item.user.name}
+                        </Text>    
+                    </View>
+                    <View style={AEStyles.viewRow}>
+                        <Text style={{ ...AEStyles.ModalListItemText, color: 'gray' }}>
+                            Monto total:  
+                        </Text>
+                        <Text style={AEStyles.ModalListItemText}>
+                            $ {item.bill.mount}
+                        </Text>    
+                    </View>
+                    <View style={AEStyles.viewRow}>
+                        <Text style={{ ...AEStyles.ModalListItemText, color: 'gray' }}>
+                            Destino:  
+                        </Text>
+                        <Text style={AEStyles.ModalListItemText}>
+                            {`${item.location.locationName}, ${item.location.cityName}, ${item.location.stateName}`}
+                        </Text>    
+                    </View>
+                    <Text style={{ ...AEStyles.textItem, color: 'gray' }}> 
+                        Pendiente
+                    </Text>
+                    <Text style={AEStyles.textItem}>
+                        Productos
+                    </Text>
+                    {
+                        item.bill.products.map((data, index) => (
+                            <View 
+                                style={{ ...AEStyles.item, marginTop: '2%' }}
+                                key={index}
+                                >
+                                <View style={{ flexDirection: 'row' }}>
+                                    {
+                                        (data.img == null)
+                                        ? <Avatar 
+                                            size="medium"
+                                            containerStyle={{ ...AEStyles.img,  backgroundColor: 'lightgray' }}
+                                            icon={{ name: 'camera-outline', color: 'white', type: 'ionicon', size: 40 }} 
+                                        />
+                                        : <Image
+                                            source={{ uri: `data:image/png;base64,${data.img}` }}
+                                            containerStyle={{ ...AEStyles.img }}
+                                        /> 
+                                    }
+                                    
+                                    <View style={{ paddingLeft: '3%', width: '75%' }}>
+                                        <ScrollView>
+                                            <Text style={AEStyles.tittleItem}>
+                                                {data.name}
+                                            </Text>
+                                
+                                            <Text style={{ color: 'gray' }}>
+                                                {data.description}
+                                            </Text>
+                                            <View  style={{ ...AEStyles.viewRow, marginVertical: '2%' }}>
+                                                <Text style={{ color: 'gray', fontWeight: 'bold' }}>
+                                                    {'Variante: '}
+                                                </Text>
+                                                <Text style={{ color: BasicColors.THEME_COLOR_SEC, fontWeight: 'bold' }}>
+                                                    {data.variants.name}
+                                                </Text>    
+                                            </View>
+                                            <View style={{ ...AEStyles.viewRow, marginVertical: '2%' }}>
+                                                <Text style={{ color: 'gray', fontWeight: 'bold' }}>
+                                                    {'Cantidad: '}
+                                                </Text>
+                                                <Text style={{ color: BasicColors.THEME_COLOR_SEC, fontWeight: 'bold' }}>
+                                                    {data.cart.totalUnit}
+                                                </Text>    
+                                            </View>
+                                            <View style={{ ...AEStyles.viewRow, marginVertical: '2%' }}>
+                                                <Text style={{ color: 'gray', fontWeight: 'bold', width: '50%' }}>
+                                                    {'Precio: '}
+                                                </Text>
+                                                <View style={{ flexDirection: 'row-reverse', width: '50%' }}>
+                                                    <Text style={{ color: 'green', fontWeight: 'bold' }}>
+                                                        $ {Number.parseFloat(data.price).toFixed(2)}
+                                                    </Text>    
+                                                </View>
+                                            </View>
+                                            {
+                                                (data.extras.length < 1)
+                                                ? null
+                                                : <View>   
+                                                    <Text style={{ marginVertical: '2%', fontWeight: 'bold', color: BasicColors.THEME_COLOR_SEC }}>
+                                                        Extras
+                                                    </Text>
+                                                    {
+                                                        data.extras.map((ite, index) => (
+                                                            <View 
+                                                                style={AEStyles.viewRow}
+                                                                key={index}
+                                                                >    
+                                                                <View style={{ ...AEStyles.viewRow, justifyContent: 'space-between' }}>
+                                                                    <View style={{ width:  '50%' }}>
+                                                                        <Text style={{ color: 'gray', fontWeight: 'bold' }}>
+                                                                            {ite.name}   
+                                                                        </Text>
+                                                                    </View>    
+                                                                    <View style={{ width: '50%', flexDirection: 'row-reverse' }}>
+                                                                        <Text style={{ color: 'green', fontWeight: 'bold', paddingRight: '2%' }}>
+                                                                            $ {Number.parseFloat(ite.price).toFixed(2)}
+                                                                        </Text>
+                                                                    </View> 
+                                                                </View>
+                                                            </View>
+                                                        ))
+                                                    }
+                                                </View>
+                                            }
+                                        </ScrollView>
+                                        <View style={{ ...AEStyles.viewRow, marginTop: '3%' }}>
+                                            <View style={{ width: '50%' }}>
+                                                <Text style={{ color: BasicColors.THEME_COLOR_SEC, fontWeight: 'bold' }}>
+                                                    Monto total:   
+                                                </Text> 
+                                            </View>
+                                            <View style={{ width: '50%', flexDirection: 'row-reverse' }}>
+                                                <Text style={{ color: 'green', fontWeight: 'bold', paddingRight: '2%' }}>
+                                                    $ {Number.parseFloat(data.cart.totalMount).toFixed(2)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View> 
+                            </View>
+                        ))
+                    }
+                    <TouchableOpacity
+                        style={AEStyles.button}
+                        onPress={() => handleButton(item)}
+                        >     
+                        <Text style={AEStyles.textButton}>
+                            Tesis
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            }
         </View>
     )
 
@@ -441,7 +701,7 @@ const AdminEnterprise = ({ navigation, route }) => {
 
         bankAux.push(data);
         setEnterprise({ ...enterprise, banks: bankAux });
-        setModal({ type: 'Bancos', flag: true });
+        setModal({ type: 'Bancos', flag: true, history: false });
     }
 
     const callBackNewHour = (data) => {
@@ -449,7 +709,7 @@ const AdminEnterprise = ({ navigation, route }) => {
     }
 
     const callBackProduct = (type, data) => {
-        const aux = enterprise.products;
+        let aux = enterprise.products;
        
         switch(type) {
             case 'create':
@@ -457,13 +717,14 @@ const AdminEnterprise = ({ navigation, route }) => {
                 break;
             
             case 'update':
-                aux.map(product => {
-                    if(product.id == data.id) {
+                aux = aux.map(product => { 
+                    if(product.id == data.id) { 
                         return data;
+                    
+                    } else {
+                        return product;
                     }
-
-                    return product;
-                });
+                }); 
             break;
 
             default:
@@ -484,6 +745,10 @@ const AdminEnterprise = ({ navigation, route }) => {
         navigation.navigate('NewBank', bodyAux);
         setModal({ ...modal, flag: false });
     }
+
+    useEffect(() => {  
+        refresh(); 
+    }, []);
 
     return (
         <View style={AEStyles.container}>
@@ -584,10 +849,17 @@ const AdminEnterprise = ({ navigation, route }) => {
                     : null
                 }
             />
+            <ModalListC
+                tittle='Pedidos'
+                vissible={modal.history}
+                onCancel={() => setModal({ ...modal, history: false })}
+                renderItem={ModalRenderItemHistory}
+                data={sell}
+            />
             <HeaderC 
                 title='Empresa'
                 leftIconAction={() => navigation.goBack()}
-                cartAction={()=> alert('envia a carrito')}
+                cartAction={()=> navigation.navigate('Cart')}
             />
             <View style={AEStyles.body}>
                 <ScrollView
@@ -649,11 +921,11 @@ const AdminEnterprise = ({ navigation, route }) => {
                     />
                     <ItemC
                         title='Productos'
-                        action={() => setModal({ type: 'Productos', flag: true })}
+                        action={() => setModal({ type: 'Productos', flag: true, history: false })}
                     />
                     <ItemC
                         title='Seccion de productos'
-                        action={() => setModal({ type: 'Seccion de productos', flag: true })}
+                        action={() => setModal({ type: 'Seccion de productos', flag: true, history: false })}
                     />
                     <ItemC
                         title='Horario y dias laborales'
@@ -666,7 +938,7 @@ const AdminEnterprise = ({ navigation, route }) => {
                     />
                     <ItemC
                         title='Numeros telefonicos'
-                        action={() => setModal({ type: 'Telefono', flag: true })}
+                        action={() => setModal({ type: 'Telefono', flag: true, history: false })}
                     />
                     <ItemC
                         title='Direccion del negocio'
@@ -679,11 +951,11 @@ const AdminEnterprise = ({ navigation, route }) => {
                     />
                     <ItemC
                         title='Cuentas bancarias'
-                        action={() => setModal({ type: 'Bancos', flag: true })}
+                        action={() => setModal({ type: 'Bancos', flag: true, history: false })}
                     />
                     <ItemC
-                        title='Ventas'
-                        action={() => setEnterprise({ ...enterprise, balance: 100 })}
+                        title='Pedidos'
+                        action={() => setModal({ ...modal, history: true, flag: false })}
                     />
                 </ScrollView>
             </View>
@@ -810,5 +1082,17 @@ const AEStyles = StyleSheet.create({
         padding: '3%',
         backgroundColor: 'lightgray', 
         borderRadius: 5  
+    },
+
+    ModalListItemText: {
+        color: BasicColors.THEME_COLOR_MAIN, 
+        fontWeight: 'bold', 
+        paddingRight: '3%'
+    },
+
+    tittleItem: { 
+        color:'gray', 
+        fontWeight: "bold", 
+        fontSize: 20 
     },
 })

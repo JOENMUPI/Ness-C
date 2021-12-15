@@ -18,6 +18,8 @@ import Field from '../components/Field';
 import ModalListC from '../components/ModalSearchList';
 import MapViewC from '../components/MapViewBasic';
 import * as BasicColors from '../styles/basic';
+import { LogBox } from 'react-native';
+LogBox.ignoreAllLogs();
 
 const MAX_STEP = 2;
 const DIRECTION_BLANK = {
@@ -201,7 +203,7 @@ const NewDirection = ({ navigation, route }) => {
             <HeaderC 
                 title={(route.params.type == 'update') ? 'Editar direccion' : 'Nueva direccion'}
                 leftIconAction={() => navigation.goBack()}
-                cartAction={() => alert('envia a carrito')}
+                cartAction={() => navigation.navigate('Cart')}
             />
             <ModalListC       
                 vissible={modal.flag}
